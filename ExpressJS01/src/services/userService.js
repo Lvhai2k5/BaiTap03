@@ -101,8 +101,101 @@ const getUserService = async () => {
     }
 }
 
+const sendResetPasswordEmailService = async (email) => {
+    try {
+        // 1. Kiểm tra xem user có tồn tại không
+        const user = await User.findOne({ email });
+        if (!user) {
+            return {
+                EC: 1,
+                EM: "Email không tồn tại"
+            };
+        }
+
+        // 2. Tạo reset token (dùng JWT)
+        const resetToken = jwt.sign(
+            { email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: "15m" }
+        );
+
+        // 3. Lưu reset token vào database (thời hạn 15 phút)
+        user.resetPasswordToken = resetToken;
+        user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 phút
+        await user.save();
+
+        // 4. Trong thực tế sẽ gửi email, nhưng ở đây ta chỉ hiển thị token
+        // console.log(`Reset token: ${resetToken}`);
+
+        return {
+            EC: 0,
+            EM: "Email reset password đã được gửi",
+            resetToken: resetToken // Dành cho test (thực tế sẽ xóa)
+        };
+
+    } catch (error) {
+        console.log(">>> Error tại sendResetPasswordEmailService: ", error);
+        return {
+            EC: -1,
+            EM: "Lỗi hệ thống"
+        };
+    }
+}
+
+const resetPasswordService = async (email, resetToken, newPassword) => {
+    try {
+        // 1. Kiểm tra user có tồn tại không
+        const user = await User.findOne({ email });
+        if (!user) {
+            return {
+                EC: 1,
+                EM: "Email không tồn tại"
+            };
+        }
+
+        // 2. Kiểm tra token hợp lệ không
+        if (!user.resetPasswordToken || user.resetPasswordToken !== resetToken) {
+            return {
+                EC: 2,
+                EM: "Token không hợp lệ"
+            };
+        }
+
+        // 3. Kiểm tra token hết hạn chưa
+        if (user.resetPasswordExpires < Date.now()) {
+            return {
+                EC: 3,
+                EM: "Token đã hết hạn"
+            };
+        }
+
+        // 4. Hash mật khẩu mới
+        const newHashPassword = await bcrypt.hash(newPassword, saltRounds);
+
+        // 5. Cập nhật mật khẩu
+        user.password = newHashPassword;
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+        await user.save();
+
+        return {
+            EC: 0,
+            EM: "Mật khẩu đã được đổi thành công"
+        };
+
+    } catch (error) {
+        console.log(">>> Error tại resetPasswordService: ", error);
+        return {
+            EC: -1,
+            EM: "Lỗi hệ thống"
+        };
+    }
+}
+
 module.exports = {
     createUserService,
     loginService,
-    getUserService
+    getUserService,
+    sendResetPasswordEmailService,
+    resetPasswordService
 };

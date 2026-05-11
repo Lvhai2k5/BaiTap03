@@ -26,7 +26,7 @@ const Header = () => {
             children: [
                 ...(auth.isAuthenticated ? [{
                     label: <span onClick={() => {
-                        localStorage.clear("access_token");
+                        localStorage.removeItem("access_token");
                         setAuth({
                             isAuthenticated: false,
                             user: { email: "", name: "" }

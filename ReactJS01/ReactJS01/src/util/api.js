@@ -17,6 +17,18 @@ const getUserApi = () => {
     return axios.get(URL_API);
 }
 
+const sendResetPasswordEmailApi = (email) => {
+    const URL_API = "/v1/api/forgot-password";
+    const data = { email };
+    return axios.post(URL_API, data);
+}
+
+const resetPasswordApi = (email, resetToken, newPassword) => {
+    const URL_API = "/v1/api/reset-password";
+    const data = { email, resetToken, newPassword };
+    return axios.post(URL_API, data);
+}
+
 export {
-    createUserApi, loginApi, getUserApi
+    createUserApi, loginApi, getUserApi, sendResetPasswordEmailApi, resetPasswordApi
 }
