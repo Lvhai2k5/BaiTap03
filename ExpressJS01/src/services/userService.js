@@ -10,7 +10,10 @@ const createUserService = async (name, email, password) => {
         const user = await User.findOne({ email });
         if (user) {
             console.log(`>>> User đã tồn tại, vui lòng chọn email khác: ${email}`);
-            return null;
+            return {
+                EC: 1,
+                EM: "Email đã tồn tại"
+            };
         }
 
         // 2. Hash mật khẩu của người dùng
@@ -22,12 +25,23 @@ const createUserService = async (name, email, password) => {
             email: email,
             password: hashPassword,
             role: "USER" // Mặc định gán role là USER
-        })
-        return result;
+        });
+
+        return {
+            EC: 0,
+            EM: "Tạo tài khoản thành công",
+            user: {
+                email: result.email,
+                name: result.name
+            }
+        };
 
     } catch (error) {
         console.log(">>> Error tại createUserService: ", error);
-        return null;
+        return {
+            EC: -1,
+            EM: "Lỗi hệ thống"
+        };
     }
 }
 
